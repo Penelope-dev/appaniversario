@@ -159,6 +159,7 @@ input:focus {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 30px;
+    margin-bottom: 30px;
 }
 
 .table-section {
@@ -191,6 +192,20 @@ tbody tr:hover {
     background: #f1f1f1;
 }
 
+/* Footer */
+.footer {
+    text-align: center;
+    padding-top: 20px;
+    margin-top: 20px;
+    border-top: 1px solid #e0e0e0;
+    color: #888;
+    font-size: 14px;
+}
+
+.footer p {
+    margin: 0;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
     .container {
@@ -204,5 +219,9 @@ tbody tr:hover {
     
     h1 {
         font-size: 1.8em;
+    }
+    
+    .footer {
+        font-size: 12px;
     }
 }
