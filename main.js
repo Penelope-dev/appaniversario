@@ -2,6 +2,64 @@ import { createBirthday, readBirthdays, deleteBirthday } from './crud.js';
 
 let birthdays = [];
 
+// Função para calcular idade
+function calculateAge(birthDate) {
+    const today = new Date();
+    const [ano, mes, dia] = birthDate.split('-');
+    let age = today.getFullYear() - parseInt(ano);
+    const birthDayThisYear = new Date(today.getFullYear(), parseInt(mes) - 1, parseInt(dia));
+    
+    if (birthDayThisYear > today) {
+        age--;
+    }
+    return age;
+}
+
+// Função para atualizar card de destaque do aniversariante do dia
+function updateHighlightCard() {
+    const today = new Date();
+    const todayStr = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;
+    
+    const birthdaysToday = birthdays.filter(birthday => {
+        const [ano, mes, dia] = birthday.dataNascimento.split('-');
+        const birthDateStr = `${dia}.${mes}`;
+        return birthDateStr === todayStr;
+    });
+    
+    const highlightCard = document.getElementById('highlightCard');
+    const birthdayPersonDiv = document.getElementById('birthdayPerson');
+    
+    if (birthdaysToday.length > 0) {
+        // Tem aniversariante(s) hoje
+        if (birthdaysToday.length === 1) {
+            const birthday = birthdaysToday[0];
+            const age = calculateAge(birthday.dataNascimento);
+            birthdayPersonDiv.innerHTML = `
+                <div class="birthday-name">🎈 ${escapeHtml(birthday.nome)} 🎈</div>
+                <div class="birthday-age">Completando ${age} anos!</div>
+                <p>🎂 Parabéns! 🎂</p>
+            `;
+        } else {
+            // Múltiplos aniversariantes
+            let html = '<div class="birthday-list">';
+            birthdaysToday.forEach(birthday => {
+                const age = calculateAge(birthday.dataNascimento);
+                html += `<li>🎉 ${escapeHtml(birthday.nome)} - ${age} anos 🎉</li>`;
+            });
+            html += '</div>';
+            birthdayPersonDiv.innerHTML = html;
+        }
+        highlightCard.style.animation = 'pulse 2s infinite';
+    } else {
+        // Nenhum aniversariante hoje
+        birthdayPersonDiv.innerHTML = `
+            <p class="no-birthday">🎂 Nenhum aniversário hoje 🎂</p>
+            <p style="font-size: 14px; margin-top: 10px;">Em breve teremos celebrações!</p>
+        `;
+        highlightCard.style.animation = 'none';
+    }
+}
+
 // Função para verificar aniversários do dia
 function checkBirthdaysToday() {
     const today = new Date();
@@ -18,6 +76,9 @@ function checkBirthdaysToday() {
     if (todayCountElem) {
         todayCountElem.textContent = birthdaysToday.length;
     }
+    
+    // Atualizar card de destaque
+    updateHighlightCard();
     
     // Mostrar notificações
     birthdaysToday.forEach(birthday => {
@@ -242,16 +303,6 @@ function setupForm() {
             if (nomeInput) nomeInput.value = '';
             if (dataInput) dataInput.value = '';
             showNotification(`✅ Aniversário de ${nome} cadastrado com sucesso!`);
-            
-            // Verificar se é aniversário hoje
-            const today = new Date();
-            const todayStr = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;
-            const [ano, mes, dia] = dataNascimento.split('-');
-            const birthDateStr = `${dia}.${mes}`;
-            
-            if (birthDateStr === todayStr) {
-                showNotification(`🎉 Hoje é aniversário de ${nome}! 🎂🎈`);
-            }
         } catch (error) {
             console.error('Erro ao cadastrar:', error);
             showNotification('❌ Erro ao cadastrar aniversário. Verifique sua conexão.');
@@ -270,6 +321,7 @@ setInterval(() => {
 setInterval(() => {
     if (birthdays.length > 0) {
         renderTables();
+        updateHighlightCard();
     }
 }, 60000);
 
