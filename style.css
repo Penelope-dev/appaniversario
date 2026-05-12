@@ -154,6 +154,102 @@ input:focus {
     font-weight: bold;
 }
 
+/* Card de Destaque - Aniversariante do Dia */
+.highlight-card {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    50% {
+        transform: scale(1.02);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+}
+
+.highlight-content {
+    text-align: center;
+    color: white;
+}
+
+.highlight-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+    animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.highlight-card h3 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.birthday-person {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    backdrop-filter: blur(10px);
+}
+
+.birthday-person p {
+    font-size: 18px;
+    margin: 5px 0;
+}
+
+.birthday-person .birthday-name {
+    font-size: 28px;
+    font-weight: bold;
+    margin: 10px 0;
+    color: #fff;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.birthday-person .birthday-age {
+    font-size: 20px;
+    margin-top: 10px;
+    color: #ffeb3b;
+    font-weight: bold;
+}
+
+.birthday-person .no-birthday {
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.birthday-list {
+    list-style: none;
+    padding: 0;
+}
+
+.birthday-list li {
+    padding: 10px;
+    margin: 5px 0;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    font-size: 18px;
+}
+
 /* Tabelas */
 .tables-container {
     display: grid;
@@ -223,5 +319,13 @@ tbody tr:hover {
     
     .footer {
         font-size: 12px;
+    }
+    
+    .highlight-card h3 {
+        font-size: 20px;
+    }
+    
+    .birthday-person .birthday-name {
+        font-size: 22px;
     }
 }
