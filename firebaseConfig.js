@@ -9,7 +9,6 @@ const firebaseConfig = {
   messagingSenderId: "244754740395",
   appId: "1:244754740395:web:23a652016a2c753238b3ee"
 };
-// Inicializar apenas o Firebase (sem Auth, Storage, etc)
-const app = initializeApp(firebaseConfig);
 
+const app = initializeApp(firebaseConfig);
 export { app };
