@@ -2,101 +2,223 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Aniversários</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>Registro e Cadastro de Aniversários</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>🎂 Aniversários da turma de Dev</h1>
-        
-        <!-- Formulário de Cadastro -->
-        <div class="form-section">
-            <h2>Cadastrar Aniversariante</h2>
-            <form id="birthdayForm">
-                <div class="form-group">
-                    <label for="nome">Nome:</label>
-                    <input type="text" id="nome" required placeholder="Digite o nome completo">
-                </div>
-                <div class="form-group">
-                    <label for="dataNascimento">Data de Nascimento:</label>
-                    <input type="date" id="dataNascimento" required>
-                </div>
-                <button type="submit" class="btn-primary">Cadastrar</button>
-            </form>
+        <!-- Header -->
+        <div class="header">
+            <h1>📅 Registro e Cadastro de Aniversários</h1>
+            <p class="subtitulo">Gerencie aniversários por turma de forma simples e organizada</p>
         </div>
 
-        <!-- Notificação -->
-        <div id="notification" class="notification hidden"></div>
-
-        <!-- Estatísticas -->
-        <div class="stats">
-            <div class="stat-card">
-                <h3>Total Cadastrados</h3>
-                <p id="totalCount">0</p>
+        <!-- Cards de Acesso -->
+        <div class="cards-acesso">
+            <!-- Card Admin -->
+            <div class="card-acesso card-admin">
+                <div class="card-header">
+                    <div class="card-icon">👨‍🏫</div>
+                    <h3>Administrador</h3>
+                </div>
+                <p class="card-descricao">Criar e gerenciar turmas</p>
+                <button id="adminBtn" class="btn-acesso btn-admin">Acessar Admin</button>
+                <button id="logoutAdminBtn" class="btn-logout" style="display: none;">Sair</button>
             </div>
-            <div class="stat-card">
-                <h3>Aniversários Hoje</h3>
-                <p id="todayCount">0</p>
-            </div>
-        </div>
 
-        <!-- Card de Destaque do Aniversariante do Dia -->
-        <div id="highlightCard" class="highlight-card">
-            <div class="highlight-content">
-                <div class="highlight-icon">🎉</div>
-                <h3>Aniversariante(s) do Dia</h3>
-                <div id="birthdayPerson" class="birthday-person">
-                    <p class="no-birthday">🎂 Nenhum aniversário hoje</p>
+            <!-- Card Aluno -->
+            <div class="card-acesso card-aluno">
+                <div class="card-header">
+                    <div class="card-icon">👨‍🎓</div>
+                    <h3>Aluno</h3>
+                </div>
+                <p class="card-descricao">Acesse sua turma com o código</p>
+                
+                <div class="aluno-form">
+                    <!-- Seleção de Turma -->
+                    <div class="input-group">
+                        <label class="filtro-label">📚 Selecione a turma:</label>
+                        <select id="turmaSelect" class="input-moderno">
+                            <option value="">Selecione uma turma</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Campo de senha -->
+                    <div class="input-group">
+                        <label class="filtro-label">🔑 Código de acesso:</label>
+                        <input type="password" id="senhaTurma" placeholder="Digite o código de acesso" class="input-moderno">
+                    </div>
+                    
+                    <button id="entrarTurmaBtn" class="btn-acesso btn-aluno">Entrar na Turma</button>
                 </div>
             </div>
         </div>
 
-        <!-- Tabela de Aniversários -->
-        <div class="tables-container">
-            <!-- Aniversários Futuros -->
-            <div class="table-section">
-                <h2>📅 Próximos Aniversários</h2>
-                <div class="table-responsive">
-                    <table id="futureTable">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Data</th>
-                                <th>Dias Restantes</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="futureBody"></tbody>
-                    </table>
+        <!-- Modal Login Admin -->
+        <div id="loginModal" class="modal">
+            <div class="modal-content login-modal">
+                <button class="close-login">&times;</button>
+                
+                <div class="login-container">
+                    <div class="login-header">
+                        <div class="login-emoji">🔐</div>
+                        <h2>Acesso Administrativo</h2>
+                        <p>Entre com suas credenciais para gerenciar as turmas</p>
+                    </div>
+
+                    <form id="loginForm" class="login-form">
+                        <div class="input-group">
+                            <label for="loginEmail">E-mail</label>
+                            <input type="email" id="loginEmail" required value="flexa.senai@docente.br" placeholder="Digite seu e-mail" class="input-moderno">
+                        </div>
+
+                        <div class="input-group">
+                            <label for="loginSenha">Senha</label>
+                            <div class="senha-container">
+                                <input type="password" id="loginSenha" required placeholder="Digite sua senha" class="input-moderno">
+                                <button type="button" id="toggleSenha" class="btn-toggle-senha">👁️</button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary btn-login">Entrar</button>
+                    </form>
+
+                    <div class="credenciais-info">
+                        <p><span class="label">📧 E-mail:</span> flexa.senai@docente.br</p>
+                        <p><span class="label">🔑 Senha:</span> ••••••</p>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Aniversários Passados -->
-            <div class="table-section">
-                <h2>⏪ Aniversários Passados</h2>
-                <div class="table-responsive">
-                    <table id="pastTable">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Data</th>
-                                <th>Passou Há</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="pastBody"></tbody>
-                    </table>
+        <!-- Modal Admin -->
+        <div id="adminModal" class="modal">
+            <div class="modal-content">
+                <button class="close">&times;</button>
+                <h2>👨‍🏫 Painel do Administrador</h2>
+                <div class="admin-info">
+                    <p>Bem-vindo, <strong id="adminEmail">Admin</strong>!</p>
+                </div>
+                <div class="form-section">
+                    <h3>📚 Criar Nova Turma</h3>
+                    <form id="createTurmaForm">
+                        <div class="form-group">
+                            <label>Nome da Turma:</label>
+                            <input type="text" id="nomeTurma" required placeholder="Ex: Desenvolvimento de Sistemas" class="input-moderno">
+                        </div>
+                        <div class="form-group">
+                            <label>Código de Acesso:</label>
+                            <input type="password" id="senhaTurmaAdmin" required placeholder="Crie um código para a turma" class="input-moderno">
+                        </div>
+                        <button type="submit" class="btn-primary">✅ Criar Turma</button>
+                    </form>
+                </div>
+                <div class="form-section">
+                    <h3>📋 Turmas Existentes</h3>
+                    <!-- Filtro Admin -->
+                    <div class="filtro-container">
+                        <label class="filtro-label">🔍 Filtrar turmas:</label>
+                        <input type="text" id="filtroAdmin" placeholder="Digite o nome da turma..." class="input-moderno input-filtro">
+                    </div>
+                    <div id="listaTurmas" class="turmas-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Aluno -->
+        <div id="turmaModal" class="modal">
+            <div class="modal-content modal-large">
+                <button class="close-turma">&times;</button>
+                <div id="turmaContent">
+                    <div class="turma-header">
+                        <h2 id="turmaNome">🎓 Turma</h2>
+                        <button id="sairTurmaBtn" class="btn-sair">🚪 Sair da Turma</button>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>📝 Cadastrar Aniversariante</h3>
+                        <form id="birthdayForm">
+                            <div class="form-group">
+                                <label>Nome Completo:</label>
+                                <input type="text" id="nome" required placeholder="Digite o nome completo" class="input-moderno">
+                            </div>
+                            <div class="form-group">
+                                <label>Data de Nascimento:</label>
+                                <input type="date" id="dataNascimento" required class="input-moderno">
+                            </div>
+                            <button type="submit" class="btn-primary">✅ Cadastrar</button>
+                        </form>
+                    </div>
+
+                    <div id="notification" class="notification hidden"></div>
+
+                    <div class="stats-row">
+                        <div class="stat-card-large">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-info">
+                                <h3>Total de Aniversariantes</h3>
+                                <p id="totalCount">0</p>
+                            </div>
+                        </div>
+                        <div class="stat-card-large">
+                            <div class="stat-icon">🎉</div>
+                            <div class="stat-info">
+                                <h3>Aniversariantes Hoje</h3>
+                                <p id="todayCount">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="highlightCard" class="highlight-card">
+                        <div class="highlight-content">
+                            <div class="highlight-icon">🎉</div>
+                            <h2>🎂 Aniversariante(s) do Dia 🎂</h2>
+                            <div id="birthdayPerson" class="birthday-person">
+                                <p class="sem-aniversario">Nenhum aniversário hoje</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tables-row">
+                        <!-- Próximos Aniversários -->
+                        <div class="table-card">
+                            <div class="table-header-filtro">
+                                <h3>📅 Próximos Aniversários</h3>
+                                <input type="text" id="filtroFuturos" placeholder="🔍 Filtrar por nome..." class="input-moderno input-filtro-pequeno">
+                            </div>
+                            <div class="table-responsive">
+                                <table id="futureTable">
+                                    <thead><tr><th>Nome</th><th>Data</th><th>Dias</th><th>Ações</th></tr></thead>
+                                    <tbody id="futureBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Aniversários Passados -->
+                        <div class="table-card">
+                            <div class="table-header-filtro">
+                                <h3>⏪ Aniversários Passados</h3>
+                                <input type="text" id="filtroPassados" placeholder="🔍 Filtrar por nome..." class="input-moderno input-filtro-pequeno">
+                            </div>
+                            <div class="table-responsive">
+                                <table id="pastTable">
+                                    <thead><tr><th>Nome</th><th>Data</th><th>Passou Há</th><th>Ações</th></tr></thead>
+                                    <tbody id="pastBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Desenvolvido por Penelope - Turma de Desenvolvimento de Sistemas - 2026</p>
+            <p>Registro e Cadastro de Aniversários | Desenvolvido por Penelope (Programadora) | Turma: Técnico em Desenvolvimento de Sistemas 2026 - Manhã SENAI </p>
         </footer>
     </div>
 
-    <script type="module" src="main.js"></script>
+    <script type="module" src="js/main.js"></script>
 </body>
 </html>
