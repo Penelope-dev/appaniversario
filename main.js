@@ -1,340 +1,227 @@
-import { createBirthday, readBirthdays, deleteBirthday } from './crud.js';
+import { loginAdmin, logoutAdmin, isAdminLoggedIn, getAdminEmail } from './auth.js';
+import { listarTurmas, verificarSenhaTurma } from './database.js';
 
-let birthdays = [];
+console.log("🚀 Sistema iniciado!");
 
-// Função para calcular idade
-function calculateAge(birthDate) {
-    const today = new Date();
-    const [ano, mes, dia] = birthDate.split('-');
-    let age = today.getFullYear() - parseInt(ano);
-    const birthDayThisYear = new Date(today.getFullYear(), parseInt(mes) - 1, parseInt(dia));
-    
-    if (birthDayThisYear > today) {
-        age--;
-    }
-    return age;
-}
+// Elementos DOM
+const adminBtn = document.getElementById('adminBtn');
+const loginModal = document.getElementById('loginModal');
+const adminModal = document.getElementById('adminModal');
+const turmaModal = document.getElementById('turmaModal');
+const turmaSelect = document.getElementById('turmaSelect');
+const senhaTurmaInput = document.getElementById('senhaTurma');
+const entrarTurmaBtn = document.getElementById('entrarTurmaBtn');
+const logoutAdminBtn = document.getElementById('logoutAdminBtn');
+const loginForm = document.getElementById('loginForm');
+const adminEmailSpan = document.getElementById('adminEmail');
 
-// Função para atualizar card de destaque do aniversariante do dia
-function updateHighlightCard() {
-    const today = new Date();
-    const todayStr = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;
-    
-    const birthdaysToday = birthdays.filter(birthday => {
-        const [ano, mes, dia] = birthday.dataNascimento.split('-');
-        const birthDateStr = `${dia}.${mes}`;
-        return birthDateStr === todayStr;
-    });
-    
-    const highlightCard = document.getElementById('highlightCard');
-    const birthdayPersonDiv = document.getElementById('birthdayPerson');
-    
-    if (birthdaysToday.length > 0) {
-        // Tem aniversariante(s) hoje
-        if (birthdaysToday.length === 1) {
-            const birthday = birthdaysToday[0];
-            const age = calculateAge(birthday.dataNascimento);
-            birthdayPersonDiv.innerHTML = `
-                <div class="birthday-name">🎈 ${escapeHtml(birthday.nome)} 🎈</div>
-                <div class="birthday-age">Completando ${age} anos!</div>
-                <p>🎂 Parabéns! 🎂</p>
-            `;
-        } else {
-            // Múltiplos aniversariantes
-            let html = '<div class="birthday-list">';
-            birthdaysToday.forEach(birthday => {
-                const age = calculateAge(birthday.dataNascimento);
-                html += `<li>🎉 ${escapeHtml(birthday.nome)} - ${age} anos 🎉</li>`;
-            });
-            html += '</div>';
-            birthdayPersonDiv.innerHTML = html;
-        }
-        highlightCard.style.animation = 'pulse 2s infinite';
+let todasTurmas = [];
+
+// ===== FUNÇÕES PRINCIPAIS =====
+function atualizarUIAdmin() {
+    const logado = isAdminLoggedIn();
+    if (logado) {
+        adminBtn.textContent = '👨‍🏫 Gerenciar Turmas';
+        logoutAdminBtn.style.display = 'block';
+        if (adminEmailSpan) adminEmailSpan.textContent = getAdminEmail();
     } else {
-        // Nenhum aniversariante hoje
-        birthdayPersonDiv.innerHTML = `
-            <p class="no-birthday">🎂 Nenhum aniversário hoje 🎂</p>
-            <p style="font-size: 14px; margin-top: 10px;">Em breve teremos celebrações!</p>
-        `;
-        highlightCard.style.animation = 'none';
+        adminBtn.textContent = '👨‍🏫 Acessar Admin';
+        logoutAdminBtn.style.display = 'none';
     }
 }
 
-// Função para verificar aniversários do dia
-function checkBirthdaysToday() {
-    const today = new Date();
-    const todayStr = `${today.getDate().toString().padStart(2, '0')}.${(today.getMonth() + 1).toString().padStart(2, '0')}`;
-    
-    const birthdaysToday = birthdays.filter(birthday => {
-        const [ano, mes, dia] = birthday.dataNascimento.split('-');
-        const birthDateStr = `${dia}.${mes}`;
-        return birthDateStr === todayStr;
-    });
-    
-    // Atualizar contador
-    const todayCountElem = document.getElementById('todayCount');
-    if (todayCountElem) {
-        todayCountElem.textContent = birthdaysToday.length;
+adminBtn.onclick = () => {
+    if (isAdminLoggedIn()) {
+        adminModal.style.display = 'block';
+        carregarTurmasAdmin();
+    } else {
+        loginModal.style.display = 'block';
     }
+};
+
+document.querySelectorAll('.close, .close-turma, .close-login').forEach(btn => {
+    btn.onclick = () => {
+        loginModal.style.display = 'none';
+        adminModal.style.display = 'none';
+        turmaModal.style.display = 'none';
+    };
+});
+
+// Login
+loginForm.onsubmit = async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const senha = document.getElementById('loginSenha').value;
     
-    // Atualizar card de destaque
-    updateHighlightCard();
-    
-    // Mostrar notificações
-    birthdaysToday.forEach(birthday => {
-        showNotification(`🎉 Hoje é aniversário de ${birthday.nome}! 🎂🎈`);
+    const result = await loginAdmin(email, senha);
+    if (result.success) {
+        loginModal.style.display = 'none';
+        atualizarUIAdmin();
+        adminModal.style.display = 'block';
+        carregarTurmasAdmin();
+        showNotification('✅ Login realizado com sucesso!');
+    } else {
+        alert('❌ Email ou senha incorretos! Por favor, verifique suas credenciais.');
+    }
+};
+
+// Logout
+logoutAdminBtn.onclick = async () => {
+    await logoutAdmin();
+    atualizarUIAdmin();
+    adminModal.style.display = 'none';
+    showNotification('✅ Logout realizado!');
+};
+
+// ===== CARREGAR TURMAS (ADMIN) - JÁ VEM ORDENADO DO DATABASE =====
+function carregarTurmasAdmin() {
+    listarTurmas((turmas) => {
+        const listaDiv = document.getElementById('listaTurmas');
+        if (listaDiv && isAdminLoggedIn()) {
+            if (turmas.length === 0) {
+                listaDiv.innerHTML = '<p class="sem-dados">Nenhuma turma cadastrada</p>';
+            } else {
+                listaDiv.innerHTML = '';
+                turmas.forEach(t => {
+                    listaDiv.innerHTML += `
+                        <div class="turma-item" data-id="${t.id}">
+                            <div>
+                                <strong class="turma-nome">📚 ${t.nome}</strong><br>
+                                <small>🆔 Criada em: ${new Date(t.createdAt).toLocaleDateString()}</small>
+                            </div>
+                            <div class="turma-acoes">
+                                <button class="btn-delete" data-id="${t.id}" data-nome="${t.nome}">🗑️ Excluir</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                document.querySelectorAll('#listaTurmas .btn-delete').forEach(btn => {
+                    btn.onclick = async () => {
+                        if (confirm('⚠️ Excluir esta turma?')) {
+                            const { deleteTurma } = await import('./database.js');
+                            await deleteTurma(btn.dataset.id);
+                            carregarTurmasAdmin();
+                            showNotification('✅ Turma excluída!');
+                        }
+                    };
+                });
+                
+                const filtroAdmin = document.getElementById('filtroAdmin');
+                if (filtroAdmin) {
+                    filtroAdmin.addEventListener('input', () => {
+                        const termo = (filtroAdmin.value || '').toLowerCase();
+                        document.querySelectorAll('#listaTurmas .turma-item').forEach(item => {
+                            const nome = item.querySelector('.turma-nome')?.textContent?.toLowerCase() || '';
+                            item.style.display = nome.includes(termo) ? 'flex' : 'none';
+                        });
+                    });
+                }
+            }
+        }
     });
-    
-    return birthdaysToday;
 }
 
-// Função para mostrar notificação
+// ===== CARREGAR TURMAS (ALUNO) - JÁ VEM ORDENADO DO DATABASE =====
+function carregarTurmasAluno() {
+    listarTurmas((turmas) => {
+        todasTurmas = turmas;
+        turmaSelect.innerHTML = '<option value="">📚 Selecione uma turma</option>';
+        turmas.forEach(t => {
+            turmaSelect.innerHTML += `<option value="${t.id}">${t.nome}</option>`;
+        });
+    });
+}
+
+// ===== ENTRAR NA TURMA =====
+entrarTurmaBtn.onclick = async () => {
+    const turmaId = turmaSelect.value;
+    const senha = senhaTurmaInput.value;
+    
+    if (!turmaId || !senha) {
+        showNotification('❌ Selecione uma turma e digite o código!');
+        return;
+    }
+    
+    const valido = await verificarSenhaTurma(turmaId, senha);
+    if (valido) {
+        const turmaNome = turmaSelect.options[turmaSelect.selectedIndex].text;
+        document.getElementById('turmaNome').innerHTML = `🎓 ${turmaNome}`;
+        turmaModal.style.display = 'block';
+        senhaTurmaInput.value = '';
+        showNotification(`✅ Bem-vindo à turma ${turmaNome}!`);
+        
+        const { carregarDadosTurma } = await import('./aluno.js');
+        carregarDadosTurma(turmaId);
+    } else {
+        showNotification('❌ Código de acesso incorreto!');
+    }
+};
+
+// ===== SAIR DA TURMA =====
+document.getElementById('sairTurmaBtn').onclick = () => {
+    turmaModal.style.display = 'none';
+    showNotification('👋 Você saiu da turma');
+};
+
+// ===== TOGGLE SENHA =====
+const toggleSenhaBtn = document.getElementById('toggleSenha');
+const loginSenhaInput = document.getElementById('loginSenha');
+
+if (toggleSenhaBtn && loginSenhaInput) {
+    toggleSenhaBtn.addEventListener('click', () => {
+        if (loginSenhaInput.type === 'password') {
+            loginSenhaInput.type = 'text';
+            toggleSenhaBtn.textContent = '🙈';
+        } else {
+            loginSenhaInput.type = 'password';
+            toggleSenhaBtn.textContent = '👁️';
+        }
+    });
+}
+
+// ===== NOTIFICAÇÃO =====
 function showNotification(message) {
     const notification = document.getElementById('notification');
     if (notification) {
         notification.textContent = message;
         notification.classList.remove('hidden');
-        
-        setTimeout(() => {
-            notification.classList.add('hidden');
-        }, 5000);
+        setTimeout(() => notification.classList.add('hidden'), 3000);
+    }
+}
+
+// ===== FECHAR MODAL =====
+window.onclick = (event) => {
+    if (event.target === loginModal) loginModal.style.display = 'none';
+    if (event.target === adminModal) adminModal.style.display = 'none';
+    if (event.target === turmaModal) turmaModal.style.display = 'none';
+};
+
+// ===== FORMULÁRIO ADMIN =====
+document.getElementById('createTurmaForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nome = document.getElementById('nomeTurma').value;
+    const senha = document.getElementById('senhaTurmaAdmin').value;
+    
+    if (!nome || !senha) {
+        showNotification('❌ Preencha todos os campos');
+        return;
+    }
+    
+    const { createTurma } = await import('./database.js');
+    const result = await createTurma(nome, senha);
+    if (result.success) {
+        showNotification(`✅ Turma "${nome}" criada!`);
+        document.getElementById('createTurmaForm').reset();
+        carregarTurmasAdmin();
+        carregarTurmasAluno();
     } else {
-        alert(message);
+        showNotification(`❌ Erro: ${result.error}`);
     }
-}
+});
 
-// Função para calcular dias até o próximo aniversário
-function daysUntilBirthday(birthDate) {
-    const today = new Date();
-    const [ano, mes, dia] = birthDate.split('-');
-    let nextBirthday = new Date(today.getFullYear(), parseInt(mes) - 1, parseInt(dia));
-    
-    if (nextBirthday < today) {
-        nextBirthday.setFullYear(today.getFullYear() + 1);
-    }
-    
-    const diffTime = nextBirthday - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-}
+// ===== INICIAR =====
+atualizarUIAdmin();
+carregarTurmasAluno();
 
-// Função para calcular dias que passaram desde o aniversário
-function daysSinceBirthday(birthDate) {
-    const today = new Date();
-    const [ano, mes, dia] = birthDate.split('-');
-    let lastBirthday = new Date(today.getFullYear(), parseInt(mes) - 1, parseInt(dia));
-    
-    if (lastBirthday > today) {
-        lastBirthday.setFullYear(today.getFullYear() - 1);
-    }
-    
-    const diffTime = today - lastBirthday;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-}
-
-// Função para classificar aniversários
-function categorizeBirthdays() {
-    const today = new Date();
-    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    
-    const future = [];
-    const past = [];
-    
-    birthdays.forEach(birthday => {
-        const [ano, mes, dia] = birthday.dataNascimento.split('-');
-        const birthDateThisYear = new Date(today.getFullYear(), parseInt(mes) - 1, parseInt(dia));
-        
-        // Comparar datas sem considerar horas
-        if (birthDateThisYear >= todayDate) {
-            // Aniversário futuro ou hoje
-            future.push({
-                ...birthday,
-                daysLeft: daysUntilBirthday(birthday.dataNascimento)
-            });
-        } else {
-            // Aniversário passado
-            past.push({
-                ...birthday,
-                daysPassed: daysSinceBirthday(birthday.dataNascimento)
-            });
-        }
-    });
-    
-    // Ordenar futuros por data (mais próximo primeiro)
-    future.sort((a, b) => a.daysLeft - b.daysLeft);
-    
-    // Ordenar passados por data (mais recente primeiro)
-    past.sort((a, b) => a.daysPassed - b.daysPassed);
-    
-    return { future, past };
-}
-
-// Função para formatar data
-function formatarData(dataISO) {
-    const [ano, mes, dia] = dataISO.split('-');
-    return `${dia}/${mes}`;
-}
-
-// Função para deletar item
-async function deleteItem(id, nome) {
-    if (confirm(`Tem certeza que deseja excluir o aniversário de ${nome}?`)) {
-        try {
-            await deleteBirthday(id);
-            showNotification(`✅ Aniversário de ${nome} removido com sucesso!`);
-        } catch (error) {
-            console.error('Erro ao deletar:', error);
-            showNotification('❌ Erro ao remover aniversário');
-        }
-    }
-}
-
-// Função para renderizar tabelas
-function renderTables() {
-    const { future, past } = categorizeBirthdays();
-    
-    // Renderizar tabela de futuros
-    const futureBody = document.getElementById('futureBody');
-    if (futureBody) {
-        futureBody.innerHTML = '';
-        
-        if (future.length === 0) {
-            const row = futureBody.insertRow();
-            row.innerHTML = `<td colspan="4" style="text-align: center;">Nenhum aniversário futuro cadastrado</td>`;
-        } else {
-            future.forEach(birthday => {
-                const row = futureBody.insertRow();
-                const dataFormatada = formatarData(birthday.dataNascimento);
-                const diasTexto = birthday.daysLeft === 0 ? 'Hoje! 🎉' : `${birthday.daysLeft} dias`;
-                
-                row.innerHTML = `
-                    <td>${escapeHtml(birthday.nome)}</td>
-                    <td>${dataFormatada}</td>
-                    <td>${diasTexto}</td>
-                    <td><button class="btn-delete" data-id="${birthday.id}" data-nome="${escapeHtml(birthday.nome)}">Excluir</button></td>
-                `;
-            });
-        }
-    }
-    
-    // Renderizar tabela de passados
-    const pastBody = document.getElementById('pastBody');
-    if (pastBody) {
-        pastBody.innerHTML = '';
-        
-        if (past.length === 0) {
-            const row = pastBody.insertRow();
-            row.innerHTML = `<td colspan="4" style="text-align: center;">Nenhum aniversário passado</td>`;
-        } else {
-            past.forEach(birthday => {
-                const row = pastBody.insertRow();
-                const dataFormatada = formatarData(birthday.dataNascimento);
-                
-                row.innerHTML = `
-                    <td>${escapeHtml(birthday.nome)}</td>
-                    <td>${dataFormatada}</td>
-                    <td>${birthday.daysPassed} dias</td>
-                    <td><button class="btn-delete" data-id="${birthday.id}" data-nome="${escapeHtml(birthday.nome)}">Excluir</button></td>
-                `;
-            });
-        }
-    }
-    
-    // Adicionar event listeners aos botões de deletar
-    document.querySelectorAll('.btn-delete').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const id = button.getAttribute('data-id');
-            const nome = button.getAttribute('data-nome');
-            deleteItem(id, nome);
-        });
-    });
-    
-    // Atualizar total
-    const totalCountElem = document.getElementById('totalCount');
-    if (totalCountElem) {
-        totalCountElem.textContent = birthdays.length;
-    }
-}
-
-// Função para escapar HTML (proteção XSS)
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// Função para carregar dados
-function loadData() {
-    readBirthdays((data) => {
-        birthdays = data;
-        renderTables();
-        checkBirthdaysToday();
-    });
-}
-
-// Configurar formulário
-function setupForm() {
-    const form = document.getElementById('birthdayForm');
-    if (!form) return;
-    
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        
-        const nomeInput = document.getElementById('nome');
-        const dataInput = document.getElementById('dataNascimento');
-        
-        const nome = nomeInput ? nomeInput.value.trim() : '';
-        const dataNascimento = dataInput ? dataInput.value : '';
-        
-        if (!nome || !dataNascimento) {
-            showNotification('❌ Por favor, preencha todos os campos!');
-            return;
-        }
-        
-        // Validar data
-        const dataParts = dataNascimento.split('-');
-        if (dataParts.length !== 3) {
-            showNotification('❌ Data inválida!');
-            return;
-        }
-        
-        try {
-            await createBirthday(nome, dataNascimento);
-            if (nomeInput) nomeInput.value = '';
-            if (dataInput) dataInput.value = '';
-            showNotification(`✅ Aniversário de ${nome} cadastrado com sucesso!`);
-        } catch (error) {
-            console.error('Erro ao cadastrar:', error);
-            showNotification('❌ Erro ao cadastrar aniversário. Verifique sua conexão.');
-        }
-    });
-}
-
-// Verificar aniversários periodicamente (a cada hora)
-setInterval(() => {
-    if (birthdays.length > 0) {
-        checkBirthdaysToday();
-    }
-}, 3600000);
-
-// Verificar também ao carregar a página e a cada minuto a data (para caso o usuário deixe a página aberta)
-setInterval(() => {
-    if (birthdays.length > 0) {
-        renderTables();
-        updateHighlightCard();
-    }
-}, 60000);
-
-// Inicializar
-function init() {
-    console.log('Sistema de Aniversários iniciado!');
-    setupForm();
-    loadData();
-}
-
-// Iniciar aplicação quando o DOM estiver pronto
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
-}
+console.log("✅ Sistema pronto!");
